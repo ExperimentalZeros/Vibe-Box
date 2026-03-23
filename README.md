@@ -14,13 +14,13 @@
 * Add Spearker or a cheap UART voice generation device from some BS online retail store.
 * Random loose hardware to put everything together.
 
-#Firmware:
-* On the ESP32: MicroPython 2 1.27.0,
+# Firmware:
+* On the ESP32: "ESP32_GENERIC-D2WD-20251209-v1.27.0.bin",
 * I would like to have "Espruino" in it, but have not done anything about compaling it for the "ESP32-D0WD-V3"... maybe vibe code it my way into it too.
-* On the other end: Fedora
+* On the other end: Fedora, with "mpremote 1.27.0"
 
-#Agent:
+# Agent:
 Google (free account).... so far... I encourage anything else too... it must be identified in the branch name.
 
-#Goal:
-To save/waste as much time as possible vibe-coding "code" using current tech.... I hope I can comeback decades later to see how it went. I will do very minimal code review and hope it makes me happy. I will create a couple more physical environments for testing, as mentioned before: it must be identified in the branch name. Currently the goal is to "Vibe-Code" my way into building a device that detects ionizing radiation from a local source, and in the event a bigger form or ionizing radiation is detected, to alter the user thru visuals and sounds accordingly. I also figure the color/UV lights, the display, and sound interface could also be dynamically updated interface thru C/BASH/Python/JS (or watever program of choice with tty communication capability) for fun..... like, AI....
+# Goal:
+To save/waste as much time as possible vibe-coding "code" using current tech.... I hope I can comeback decades later to see how it went. I will do very minimal code review and hope it makes me happy. I will create a couple more physical environments for testing, as mentioned before: it must be identified in the branch name. Currently the goal is to "Vibe-Code" my way into building a device that detects ionizing radiation from a local source, and in the event a bigger form or ionizing radiation is detected, to alter the user thru visuals and sounds accordingly. I also figure the color/UV lights, the display, and sound interface could also be dynamically updated interface thru C/BASH/Python/JS (or watever program of choice with tty communication capability) for fun..... with things like.... AI....
