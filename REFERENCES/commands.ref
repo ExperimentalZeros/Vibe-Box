@@ -1,0 +1,14 @@
+Chip is ESP32-D0WD-V3 (revision v3.1)
+
+esptool.py erase_flash
+esptool.py --baud 460800 write_flash 0x1000 ESP32_GENERIC-D2WD-20251209-v1.27.0.bin
+
+mpremote fs cp main.py :main.py; mpremote soft-reset
+mpremote fs cp main.py :main.py; sleep 2; mpremote soft-reset
+mpremote repl
+mpremote cp main.py VFD.py NeoPixels.py : + repl
+mpremote cp main.py VFD.py NeoPixels.py :
+mpremote cp main.py VFD.py NeoPixels.py DS1302.py :
+mpremote reset
+mpremote cp main.py VFD.py NeoPixels.py DS1302.py :
+mpremote cp main.py VFD.py NeoPixels.py :
