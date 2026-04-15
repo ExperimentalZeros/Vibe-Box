@@ -1,0 +1,61 @@
+from machine import UART, Pin
+import time
+import random
+
+# Updated module name per your request
+import ir_38khz          
+import expander_pcf8591
+import neopixels_ws2812b
+import rtc_zs042
+import sound_dysv5f
+import vfd_cu20026
+
+time.sleep_ms(250)
+
+# --- INITIALIZATION ---
+# Using the updated module name
+ir = ir_38khz.IRrcv(pin_num=23)
+
+# Initializing objects (assuming these classes exist in your library files)
+exp = expander_pcf8591.PCF8591() 
+rtc = rtc_zs042.DS3231() 
+vfd = vfd_cu20026.VFD()
+np  = neopixels_ws2812b.NeoPixel(pin=18, n=16)
+
+# Sound Setup
+uart2 = UART(2, baudrate=9600, tx=17, rx=16)
+busy_pin = Pin(15, Pin.IN, Pin.PULL_UP)
+sound = sound_dysv5f.DYSVxF(uart2, busy_pin)
+sound.set_volume(25)
+
+message = "* The #1 Yunk-Jard * 0 * 1 * 2 * 3 * 4 * 5 * 6 * 7 * 8 * 9 * A * B * C * D * E * F "
+index = 0
+
+try:
+    while True:
+        # IR Receiver - Check for valid command before converting to hex
+        cmd = ir.get_command()
+        ir_val = hex(cmd) if cmd is not None else "No Cmd"
+
+        # NeoPixels
+        r, g, b = [random.randint(0, 5) for _ in range(3)]
+        np.set_color(r, g, b)
+
+        # RTC - Corrected string formatting with opening quotes
+        current_time = rtc.get_time() 
+        rtc_time_str = "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}".format(*current_time)
+        rtc_temp_str = "{:.2f}C".format(rtc.get_temp())
+
+        # Sound
+        if busy_pin.value(): # Check busy pin state (usually 1 is idle, 0 is busy)
+            sound.play_track(random.randint(1, 100))
+
+        # VFD Display
+        char_to_show = message[index]
+        vfd.display_text(char_to_show)
+        
+        index = (index + 1) % len(message)
+        time.sleep_ms(100)
+
+except KeyboardInterrupt:
+    print("\nStopped by user")

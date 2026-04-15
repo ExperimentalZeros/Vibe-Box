@@ -1,25 +1,29 @@
-import NeoPixels
-import vfd
-import rtc
+import NeoPixels_ws2812B
+import vfd_cu20026
 import time
+import random
 
 time.sleep_ms(250)
 
-NeoPixels.set_color(0, 10, 00)
+message = "* The Distraction Box by the #1 Yunk-Jard * 0 * 1 * 2 * 3 * 4 * 5 * 6 * 7 * 8 * 9 * A * B * C * D * E * F "
 
-time.sleep_ms(250)
+index = 0
 
-#vfd.display_text("    The Man Talk    Time: ??:?? CNT: ???")
-#vfd.display_text("123")
+try:
+    while index < len(message):
 
-if rtc.check():
-    vfd.display_text("RTC Linked")
-    #rtc.set_time(2026, 3, 22, 21, 0, 0) # Set once
+        r = random.randint(0, 5)
+        g = random.randint(0, 5)
+        b = random.randint(0, 5)
 
-    while True:
-        y, m, d, hr, mn, sc = rtc.get_time()
-        #print(f"{y}-{m:02d}-{d:02d} {hr:02d}:{mn:02d}:{sc:02d}")
-        vfd.display_text(f"{y}-{m:02d}-{d:02d} {hr:02d}:{mn:02d}:{sc:02d} ")
-        time.sleep(1)
-else:
-    vfd.display_text("RTC Error: Check 1k resistor bridge between GPIO 23 and 19 ")
+        NeoPixels_ws2812B.set_color(r, g, b)
+
+        MSG_INDEX = message[index]
+        vfd_cu20026.display_text(MSG_INDEX)
+        print(MSG_INDEX + "\n")
+
+        index = (index + 1) % len(message)
+        time.sleep_ms(100)
+
+except KeyboardInterrupt:
+    print("\n Keyboard Interrupt")

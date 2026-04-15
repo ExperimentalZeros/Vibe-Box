@@ -1,0 +1,70 @@
+from machine import UART, Pin, I2C
+import time
+import random
+
+# Modules (Ensure filenames on ESP32 match these exactly)
+import ir_38khz
+import expander_pcf8591
+import neopixels_ws2812b
+import rtc_zs042
+import sound_dysv5f
+import vfd_cu20026
+
+# 1. Hardware Initialization
+i2c = I2C(0, scl=Pin(22), sda=Pin(21)) # Standard ESP32 I2C pins
+ir = ir_38khz.IRrcv(pin_num=23)
+exp = expander_pcf8591.PCF8591(i2c)
+rtc = rtc_zs042.DS3231(i2c)
+vfd = vfd_cu20026.VFD()
+np  = neopixels_ws2812b.NeoPixel(pin=18, n=16)
+
+# Sound Setup
+uart2 = UART(2, baudrate=9600, tx=17, rx=16)
+busy_pin = Pin(15, Pin.IN, Pin.PULL_UP)
+sound = sound_dysv5f.DYSVxF(uart2, busy_pin)
+sound.set_volume(20)
+
+print("System Initialized. Press IR buttons to interact.")
+time.sleep_ms(500)
+
+try:
+    while True:
+        # --- PHASE 1: DATA COLLECTION ---
+        current_time = rtc.get_time() # (YYYY, MM, DD, HR, MIN, SEC, WD, YD)
+        temp_rtc = rtc.get_temp()
+        pot_val = exp.get_potentiometer()
+        light_val = exp.get_light_level()
+
+        # --- PHASE 2: IR COMMAND HANDLING ---
+        cmd = ir.get_command()
+        if cmd:
+            print(f"IR Received: {hex(cmd)}")
+            # Action: Play a random sound and flash pixels on any IR press
+            sound.play_track(random.randint(1, 10))
+            np.set_color(255, 255, 255) # Flash white
+            time.sleep_ms(50)
+
+        # --- PHASE 3: VISUAL FEEDBACK (NeoPixels) ---
+        # Map potentiometer value to NeoPixel brightness or color
+        # Here we use random colors as a "heartbeat"
+        r, g, b = [random.randint(0, 10) for _ in range(3)]
+        np.set_color(r, g, b)
+
+        # --- PHASE 4: DISPLAY (VFD CU20026) ---
+        # Cycle through three different "Screens" on the VFD
+        timestamp = "{:02d}:{:02d}:{:02d}".format(current_time[3], current_time[4], current_time[5])
+
+        # Screen Line 1: Time and RTC Temp
+        vfd.display_text(f"TIME: {timestamp}")
+        # Screen Line 2: Potentiometer and Light Sensor info
+        vfd.display_text(f"P:{pot_val} L:{light_val} T:{temp_rtc}C")
+
+        # Log to REPL for debugging
+        print(f"[{timestamp}] Temp: {temp_rtc}C | Pot: {pot_val} | Light: {light_val}")
+
+        time.sleep_ms(500) # Update every half second
+
+except KeyboardInterrupt:
+    # Cleanup
+    np.set_color(0, 0, 0)
+    print("\nDemo terminated by user.")
