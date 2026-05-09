@@ -1,47 +1,60 @@
 from machine import Pin
 import time
 
-# Initialize Control Pins
-#rd = Pin(?, Pin.OUT, value=1) #VFD pin 21 set HIGH 3v3
-#cs = Pin(?, Pin.OUT, value=0) #VFD pin 23 set LOW  GND
-#ts = Pin(?, Pin.OUT, value=Z) #VFD pin 25 set OPEN N/A
-#rs = Pin(?, Pin.OUT, value=0) #VFD pin 20 set LOW  GND
+class VFD:
+    def __init__(self):
+        # Initialize Control Pins
+        #self.ts = Pin(0, Pin.OUT, value = 1) # VFD pin 25 (boot (+))
+        #self.cs = Pin(??, Pin.OUT, value=0) # VFD pin 23 (fixed (-))
+        #self.rs = Pin( 2, Pin.OUT, value = 0) # VFD pin 20 (boot (-))
+        self.a0 = Pin(18, Pin.OUT, value = 0) # VFD pin 19
+        self.wr = Pin(19, Pin.OUT, value = 1) # VFD pin 17
 
-ts = Pin(19, Pin.OUT, value=1) #VFD pin 25 set OPEN N/A
-cs = Pin(18, Pin.OUT, value=0) #VFD pin 23 set LOW  GND
-rs = Pin(5, Pin.OUT, value=0)  #VFD pin 20 set LOW  GND
-a0 = Pin(0, Pin.OUT, value=0)  #VFD pin 19
-wr = Pin(2, Pin.OUT, value=1)  #VFD pin 17
+        # Initialize 8-bit Data Bus (D0-D7)
+        self.data_pins = [Pin(p, Pin.OUT) for p in [32, 33, 25, 26, 27, 14, 12, 13]]
 
+        self.init_vfd()
 
-# Initialize 8-bit Data Bus
-# Order: D0, D1, D2, D3, D4, D5, D6, D7
+    def _write_8bit(self, value):
+        for i in range(8):
+            self.data_pins[i].value((value >> i) & 0x01)
 
-data_pins = [Pin(p, Pin.OUT) for p in [32, 33, 25, 26, 27, 14, 12, 13]]
+    def _send_byte(self, byte, is_data=True):
+        #self.cs.value(0)
+        self.a0.value(0 if is_data else 1)
+        self._write_8bit(byte)
+        # Strobe WR (Falling edge latches data)
+        self.wr.value(0)
+        time.sleep_us(1)
+        self.wr.value(1)
+        #self.cs.value(1)
 
-def write_8bit(value):
-    for i in range(8):
-        data_pins[i].value((value >> i) & 0x01)
+    def init_vfd(self):
+        #self.rs.value(1)
+        time.sleep_ms(10)
+        #self.rs.value(0)
+        time.sleep_ms(100)
 
-def send_byte(byte, is_data=True):
-    a0.value(0 if is_data else 1)
-    write_8bit(byte)
-    # Strobe WR (Falling edge latches data)
-    wr.value(0)
-    time.sleep_us(1)
-    wr.value(1)
+    def data_write(self, text):
+        for char in text:
+            self._send_byte(ord(char), is_data=True)
 
-def init_vfd():
-    rs.value(1)
-    time.sleep_ms(10)
-    rs.value(0)
-    time.sleep_ms(100)
+    def data_control(self, control):
+        self._send_byte(control, is_data=True) # Data Control "DC1" thru "DC6"
 
-def display_text(text):
-    for char in text:
-        send_byte(ord(char), is_data=True)
+    def command_write(self, cmd):
+        for char in text:
+            self._send_byte(ord(char), is_data=False)
+
+    def clear_display(self):
+        self._send_byte(0x0E, is_data=False) # Example clear command
+
+    def cursor_reset(self):
+        self._send_byte(0x00, is_data=False) # Top Line, Most Left
+
+    def cursor_off(self):
+        self._send_byte(0x15, is_data=True) # Top Line, Most Left
 
 #*** RUNTIME EXAMPLE ***
-# Example Initialization Command: Clear Display (0x0E or 0x0C depending on mode)
-#send_byte(0x0E, is_data=False)
-#display_text("    The Man Talk    Time: ??:?? CNT: ???")
+# vfd = VFD()
+# vfd.display_text("Hello World")

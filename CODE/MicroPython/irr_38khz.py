@@ -2,7 +2,7 @@ from machine import Pin
 from ir_rx.nec import NEC_8
 from ir_rx import IR_RX
 
-class IRrcv:
+class IRR:
     def __init__(self, pin_num=23, timer_id=0):
         IR_RX.Timer_id = timer_id
         self.pin = Pin(pin_num, Pin.IN)
