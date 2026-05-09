@@ -9,11 +9,12 @@ time.sleep_ms(1000)
 
 ## Modules (Ensure filenames on ESP32 match these exactly)
 bt = bluetooth.BLE()
-#bt.active(True)  # Add this line
-#ble_id = "{:02X}".format(bt.config('mac')[1][-1])
-#ble = BLEUART(bt, name=)
+bt.active(True)  # Add this line
+ble_id = "{:02X}".format(bt.config('mac')[1][-1])
+ble = BLEUART(bt, name=f"VIBE-{ble_id}")
 
-ble = BLEUART(bt, name="VIBE")
+ble_SN = "{:02X}{:02X}".format(bt.config('mac')[1][-2], bt.config('mac')[1][-1])
+#ble = BLEUART(bt, name=f"V-{ble_id}")
 
 import irr_38khz
 import exp_pcf8591
@@ -38,22 +39,22 @@ cnt_trigger = 10
 
 ## Sound Setup
 uart2 = UART(2, baudrate=9600, tx=17, rx=16)
-busy_pin = Pin(1, Pin.IN)
+busy_pin = Pin(35, Pin.IN)
 snd = snd_dysv5f.DYSVxF(uart2, busy_pin)
 snd.set_volume(20)
 
-time.sleep_ms(1500)
+time.sleep_ms(3000)
 
 neo.set_color(0, 0, 10)
 vfd.cursor_off()
 time.sleep_ms(10)
-vfd.data_write("* * Vibe-Box xXx * *")
+vfd.data_write("* * Vibe-Box v.0 * *")
 time.sleep_ms(10)
-vfd.data_write("      S/N: 1234     ")
+vfd.data_write(f"      S/N:{ble_SN}  ")
 
 time.sleep_ms(1500)
 
-ble.write(f"* * Vibe-Box xXx * *")
+ble.write(f"* * Vibe-Box  {ble_SN} * *")
 neo.set_color(0, 10, 0)
 
 time.sleep_ms(1500)
