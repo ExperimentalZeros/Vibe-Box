@@ -148,12 +148,14 @@ try:
                     #neo.set_color(0, 0, 255) # Blue for ???
 
                 else:
-                    print(f"Unknown command: {command}")
+                    #print(f"Unknown command: {command}")
                     #ble.write(f"Unknown command: {command}".encode())
+                    pass
 
             except Exception as e:
-                print("BLE Sync Error:", e)
+                #print("BLE Sync Error:", e)
                 #ble.write(f"BLE Sync Error".encode()
+                pass
 
         ## --- PHASE 2: IR COMMAND HANDLING ---
         irr_cmd = irr.get_command()
@@ -172,29 +174,39 @@ try:
         ble.write(f"20{datestamp} - {timestamp}\n\r".encode())
 
         if cnt == 0:
-            display = f"{datestamp}"
-        elif cnt == 2:
-            display = "VIBE-BOX"
-        elif cnt == 4:
-            display = "MAN-TALk"
-        elif cnt == 6:
-            display = "FCK THIS"
-        elif cnt == 8:
-            display = "TEA TIME"
-        elif cnt == 10:
-            display = "********"
-        elif cnt == 12:
-            display = " ****** "
-        elif cnt == 14:
-            display = "  ****  "
-        elif cnt == 16:
-            display = "   **   "
-        elif cnt == 18:
-            display = "    *   "
-        elif cnt == 20:
-            display = f"{datestamp}"
+            display = f"{datestamp} {irr_cmd_val}"
 
-        vfd.data_write(f"{display} {irr_cmd_val} {timestamp}")
+        elif cnt == 7:
+            display = "VIBE-BOX **"
+
+        elif cnt == 9:
+            display = "MAN-TALK **"
+
+        elif cnt == 11:
+            display = "FCK THIS **"
+
+        elif cnt == 13:
+            display = "TEA TIME **"
+
+        elif cnt == 15:
+            display = "**** 5 ****"
+
+        elif cnt == 16:
+            display = " *** 4 *** "
+
+        elif cnt == 17:
+            display = "  ** 3 **  "
+
+        elif cnt == 18:
+            display = "   * 2 *   "
+
+        elif cnt == 19:
+            display = "    *1*    "
+
+        elif cnt == 20:
+            display = "     *     "
+
+        vfd.data_write(f"{display} {timestamp}")
         time.sleep_ms(10)
 
         if (cnt // cnt_trigger) % 2 == 0:
