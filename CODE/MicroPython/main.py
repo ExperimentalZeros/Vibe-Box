@@ -5,17 +5,28 @@ from machine import UART, Pin, I2C
 import time
 import random
 
-time.sleep_ms(1000)
+## GLOBAL VARIABLES
+btID = ""
+ble = ""
+MSG = "MAN-TALK"
 
-## Modules (Ensure filenames on ESP32 match these exactly)
-bt = bluetooth.BLE()
-#bt.active(True)  # Add this line
-#ble_id = "{:02X}".format(bt.config('mac')[1][-1])
-ble = BLEUART(bt, name=f"VIBE")
+## 0) BLUETOOTH - BLE Configuration init.
+try:
+    bt = bluetooth.BLE()
+    bt.active(True)
 
-#ble_SN = "{:02X}{:02X}".format(bt.config('mac')[1][-2], bt.config('mac')[1][-1])
-#ble = BLEUART(bt, name=f"V-{ble_id}")
+    time.sleep_ms(1000)
 
+    mac_address = bt.config('mac')[1]
+    btID = "{:02X}{:02X}".format(mac_address[-2], mac_address[-1])
+    time.sleep_ms(1000)
+    ble = BLEUART(bt, name=f"V-{btID}")
+    bt.config(gap_name=f"V-{btID}")
+
+except:
+    pass
+
+## 1.1) Load Hardware "Drivers"
 import irr_38khz
 import exp_pcf8591
 import led_ws2812b
@@ -23,7 +34,7 @@ import rtc_zs042
 import snd_dysv5f
 import vfd_cu20026
 
-## 1. Hardware Initialization
+## 1.2) Hardware Initialization
 i2c = I2C(0, scl=Pin(22), sda=Pin(21)) # Standard ESP32 I2C pins
 irr = irr_38khz.IRR(pin_num=23)
 exp = exp_pcf8591.PCF8591(i2c)
@@ -31,36 +42,41 @@ rtc = rtc_zs042.DS3231(i2c)
 vfd = vfd_cu20026.VFD()
 neo = led_ws2812b.NeoPixel(pin=15, n=24)
 
+## 1.3) Light Check RED: Drivers uploaded fine!
 neo.set_color(10, 0, 0)
 
-irr_cmd_val = "00"
-cnt = 0
-cnt_trigger = 10
-
-## Sound Setup
+## 2.1) Sound Setup
 uart2 = UART(2, baudrate=9600, tx=17, rx=16)
 busy_pin = Pin(35, Pin.IN)
 snd = snd_dysv5f.DYSVxF(uart2, busy_pin)
+
 snd.set_volume(20)
+snd.set_eq(0x02)
+snd.set_play_mode(0x02)
+snd.play_track(95)
 
-time.sleep_ms(1500)
+## 2.2) Light Check BLUE: Sound settings uploaded fine!
+neo.set_color(0, 0, 10)
 
+## 3.1) Display Device Info
 vfd.cursor_off()
 vfd.cursor_reset()
-neo.set_color(0, 0, 10)
 
 time.sleep_ms(10)
 
 vfd.data_write(f"* * Vibe-Box v.0 * *")
-time.sleep_ms(10)
-vfd.data_write(f"      S/N: xXx      ")
+vfd.data_write(f"     S/N: V-{btID}    ")
 
-time.sleep_ms(3000)
-
-ble.write(f"* * Vibe-Box xXx * *")
+## 3.2) Light Check GREEN: Display data uploaded fine!
 neo.set_color(0, 10, 0)
+time.sleep_ms(5000)
 
-time.sleep_ms(1500)
+## 4) INIT COUNTER
+irr_cmd_val = "00"
+cnt = 0
+cnt_trigger = 10
+
+## 5) Start the While Loop!
 
 try:
     while True:
@@ -95,10 +111,6 @@ try:
 
                     neo.set_color(1, 0, 1)
 
-                #for i in [12, 15]:
-                #    try: Pin(i, Pin.IN, pull=None)
-                #    except: pass
-
                     Pin(0, Pin.IN, pull=Up)
                     Pin(2, Pin.IN, pull=Down)
                     Pin(5, Pin.IN, pull=Up)
@@ -109,36 +121,43 @@ try:
                     break
 
                 # 1) Process custom DATE
-                if command == "date":
-                    t = [int(x) for x in data.split(',')]
-                    if len(t) == 6:
-                        rtc.set_time(t[0], t[1], t[2], t[3], t[4], t[5])
+                elif command == "date":
+                    d = [int(x) for x in data.split(',')]
+                    if len(d) == 6:
+                        rtc.set_time(d[0], d[1], d[2], d[3], d[4], d[5])
                         vfd.data_write("* * RTC  UPDATED * *")
                         ble.write(f"DATE Updated\n\r".encode())
                         neo.set_color(255, 0, 0) # Red for DATE
                         time.sleep_ms(500)
+                        cnt = 0
 
                 # 2) Process custom MESSAGE
                 elif command == "msg":
-                    vfd.display_text(data)
-                    ble.write(f"* MSG Received *\n\r".encode())
-                    neo.set_color(0, 255, 0) # Greem for MSG
+                    m = [x for x in data.split(',')]
+                    if len(m) == 1:
+                        ble.write("* MSG Received *\n\r".encode())
+                        snd.play_track(102)
+                        MSG = m[0]
+                        neo.set_color(255, 0, 255) # PURPLE for EXP
+                        time.sleep_ms(500)
+                        cnt = 9
 
                 # 3) Process custom SOUND
                 elif command == "snd":
-                    s = [int(s) for s in data.split(',')]
+                    s = [int(x) for x in data.split(',')]
                     if len(s) == 2:
                         ble.write("* SND Received *\n\r".encode())
                         snd.set_volume( int(s[0]) )
                         snd.play_track( int(s[1]) )
                         neo.set_color(0, 0, 255) # Blue for SND
+                        cnt = 0
 
                 # 4) Process custom EXPANDER
                 elif command == "exp":
-                    x = [int(x) for x in data.split(',')]
-                    if len(x) == 1:
+                    e = [int(x) for x in data.split(',')]
+                    if len(e) == 1:
                         ble.write("* EXP Received *\n\r".encode())
-                        exp.set_dac( int(x[0]) )
+                        exp.set_dac( int(e[0]) )
                         ble.write(f"L:{exp_ldr_val} P:{exp_pot_val} D:{exp_diode_val}\n\r".encode())
                         neo.set_color(255, 255, 255) # White for EXP
 
@@ -180,7 +199,7 @@ try:
             display = "VIBE-BOX **"
 
         elif cnt == 9:
-            display = "MAN-TALK **"
+            display = f"{MSG} **"
 
         elif cnt == 11:
             display = "FCK THIS **"

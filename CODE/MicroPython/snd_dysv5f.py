@@ -27,6 +27,7 @@ class DYSVxF:
 
     def play_track(self, track_number):
         """Plays track by index (1-65535)."""
+        track_number = track_number + 1
         hb = (track_number >> 8) & 0xFF
         lb = track_number & 0xFF
         self._send(0x07, [hb, lb])
@@ -46,11 +47,17 @@ class DYSVxF:
         self._send(0x18, [mode])
 
     # --- Query & Busy Functions ---
-    def is_playing(self):
+    def get_track(self):
+        """Requests current track name"""
+        self._send(0x1E)
+        time.sleep_ms(50)
+        return self.uart.read()
+
+    def get_is_playing(self):
         """True if audio is active (requires Busy pin connected)."""
         return self.busy.value() == 0 if self.busy else False
 
-    def query_status(self):
+    def get_status(self):
         """Requests current state from module. Use uart.read() to catch result."""
         self._send(0x01)
         time.sleep_ms(50)
